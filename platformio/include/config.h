@@ -47,10 +47,11 @@
 // INDOOR ENVIRONMENT SENSOR
 // Uncomment the macro that identifies your sensor.
 #if !defined(SENSOR_BME280) && !defined(SENSOR_BME680) && !defined(SENSOR_AHT20)
-  #define SENSOR_BME280
-#endif
+ // #define SENSOR_BME280
+
 // #define SENSOR_BME680
-// #define SENSOR_AHT20
+ #define SENSOR_AHT20
+#endif
 
 // If you encounter issues with the sensor showing no data, uncomment and add a
 // small delay before reading its value. 300ms works for most BME280 modules.
@@ -82,7 +83,8 @@
 //   Dutch (Belgium)                 nl_BE
 //   Portuguese (Brazil)             pt_BR
 //   Spanish (Spain)                 es_ES
-#define LOCALE en_US
+//#define LOCALE en_US
+#define LOCALE ru_RU      //нужен шрифт с поддержкой русских буковок
 
 // UNITS
 // Define exactly one macro for each measurement type below.
@@ -97,10 +99,10 @@
 // UNITS - WIND SPEED
 //   Metric   : Kilometers per Hour
 //   Imperial : Miles per Hour
-// #define UNITS_SPEED_METERSPERSECOND
+ #define UNITS_SPEED_METERSPERSECOND
 // #define UNITS_SPEED_FEETPERSECOND
 // #define UNITS_SPEED_KILOMETERSPERHOUR
-#define UNITS_SPEED_MILESPERHOUR
+//#define UNITS_SPEED_MILESPERHOUR
 // #define UNITS_SPEED_KNOTS
 // #define UNITS_SPEED_BEAUFORT
 
@@ -109,8 +111,8 @@
 //   Imperial : Inches of Mercury
 // #define UNITS_PRES_HECTOPASCALS
 // #define UNITS_PRES_PASCALS
-// #define UNITS_PRES_MILLIMETERSOFMERCURY
-#define UNITS_PRES_INCHESOFMERCURY
+ #define UNITS_PRES_MILLIMETERSOFMERCURY
+//#define UNITS_PRES_INCHESOFMERCURY
 // #define UNITS_PRES_MILLIBARS
 // #define UNITS_PRES_ATMOSPHERES
 // #define UNITS_PRES_GRAMSPERSQUARECENTIMETER
@@ -119,16 +121,16 @@
 // UNITS - VISIBILITY DISTANCE
 //   Metric   : Kilometers
 //   Imperial : Miles
-// #define UNITS_DIST_KILOMETERS
-#define UNITS_DIST_MILES
+ #define UNITS_DIST_KILOMETERS
+//#define UNITS_DIST_MILES
 
 // UNITS - PRECIPITATION (HOURLY)
 // Measure of precipitation.
 // This can either be Probability of Precipitation (PoP) or hourly volume.
 //   Metric   : Millimeters
 //   Imperial : Inches
-#define UNITS_HOURLY_PRECIP_POP
-// #define UNITS_HOURLY_PRECIP_MILLIMETERS
+//#define UNITS_HOURLY_PRECIP_POP
+ #define UNITS_HOURLY_PRECIP_MILLIMETERS
 // #define UNITS_HOURLY_PRECIP_CENTIMETERS
 // #define UNITS_HOURLY_PRECIP_INCHES
 
@@ -138,9 +140,9 @@
 //   Metric   : Millimeters
 //   Imperial : Inches
 // #define UNITS_DAILY_PRECIP_POP
-// #define UNITS_DAILY_PRECIP_MILLIMETERS
+ #define UNITS_DAILY_PRECIP_MILLIMETERS
 // #define UNITS_DAILY_PRECIP_CENTIMETERS
-#define UNITS_DAILY_PRECIP_INCHES
+//#define UNITS_DAILY_PRECIP_INCHES
 
 // Hypertext Transfer Protocol (HTTP)
 // HTTP
@@ -160,8 +162,8 @@
 //   Running cert.py will generate an updated cert.h file.
 // (uncomment exactly one)
 // #define USE_HTTP
-// #define USE_HTTPS_NO_CERT_VERIF
-#define USE_HTTPS_WITH_CERT_VERIF // REQUIRES MANUAL UPDATE WHEN CERT EXPIRES
+ #define USE_HTTPS_NO_CERT_VERIF
+//#define USE_HTTPS_WITH_CERT_VERIF // REQUIRES MANUAL UPDATE WHEN CERT EXPIRES
 
 // Use local OpenWeatherMap sample data instead of making One Call and Air
 // Pollution API requests. Useful for display testing when no valid API key is
@@ -268,7 +270,8 @@
 //   FreeSans font, but this project supports the ability to modularly swap
 //   fonts. Using a font other than FreeSans may result in undesired spacing or
 //   other artifacts.
-#define FONT_HEADER "fonts/FreeSans.h"
+//#define FONT_HEADER "fonts/FreeSans.h"
+#define FONT_HEADER "fonts/Roboto_ruRU.h"
 
 // FORECAST TEMPERATURE ORDER
 // The order of temperture Hi|Lo can optionally be configured using
@@ -325,7 +328,7 @@
 //   level 0: basic status information, assists troubleshooting (default)
 //   level 1: increased verbosity for debugging
 //   level 2: print api responses to serial monitor
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 2
 
 // Set the below constants in "config.cpp"
 extern const uint8_t PIN_BAT_ADC;
