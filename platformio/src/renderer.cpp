@@ -123,16 +123,18 @@ String utf8rus(String source)
     {
       target += (char)n;
     }
-    // Пропускаем  кастомные спецсимволы (155, 156, 158, 159) напрямую без конвертации
-    else if (n == 0x9B || n == 0x9C || n == 0x9E || n == 0x9F)
+    // ОХВАТЫВАЕМ ВЕСЬ ДИАПАЗОН СПЕЦСИМВОЛОВ (от 128 до 191 включительно)
+    // Все кастомные глифы (градусы, радиация, м/с, ммР) пройдут на экран напрямую
+    else if (n >= 0x80 && n <= 0xBF) 
     {
       target += (char)n;
     }
+    //русские буковки
     else if (n >= 0xC0)
     {
       i++;
       unsigned char n2 = source[i];
-      int k = 0;
+      int k = 0; // Сбрасываем k для каждого символа
       if (n == 0xD0)
       {
         if (n2 == 0x81)
@@ -161,6 +163,7 @@ String utf8rus(String source)
   }
   return target;
 }
+
 
 /* Returns the string width in pixels
  */
