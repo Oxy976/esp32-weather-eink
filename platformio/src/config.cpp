@@ -17,6 +17,8 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "conf_local.h"
+
 
 // PINS
 // The configuration below is intended for use with the project's official 
@@ -67,8 +69,10 @@ const uint8_t BME_ADDRESS = 0x76; // 0x76 if SDO -> GND; 0x77 if SDO -> VCC
 const uint8_t AHT20_ADDRESS = 0x38;
 
 // WIFI
-const char *WIFI_SSID     = "_AP_name_";
-const char *WIFI_PASSWORD = "_ap_pass_";
+//const char *WIFI_SSID     = "_AP_";
+//const char *WIFI_PASSWORD = "_AP_pass";
+const char *WIFI_SSID     = SECRET_WIFI_SSID;
+const char *WIFI_PASSWORD = SECRET_WIFI_PASSWORD;
 const unsigned long WIFI_TIMEOUT = 10000; // ms, WiFi connection timeout.
 
 // HTTP
@@ -79,6 +83,10 @@ const unsigned long WIFI_TIMEOUT = 10000; // ms, WiFi connection timeout.
 //   -258 Deserialization Incomplete Input
 const unsigned HTTP_CLIENT_TCP_TIMEOUT = 10000; // ms
 
+// *1. Источник ПРОГНОЗА ПОГОДЫ (массивы hourly и daily): "GOOGLE_SCRIPT" или "OPEN_WEATHER"
+const String WEATHER_PROVIDER = "GOOGLE_SCRIPT"; 
+
+// *1.1
 // OPENWEATHERMAP API
 // OpenWeatherMap API key, https://openweathermap.org/
 const String OWM_APIKEY   = "abcdefghijklmnopqrstuvwxyz012345";
@@ -98,6 +106,20 @@ const String OWM_ENDPOINT = "api.openweathermap.org";
 //   day (no more than)" to 1,000. This ensures you will never overrun the free
 //   calls.
 const String OWM_ONECALL_VERSION = "3.0";
+
+
+// *1.2
+// Прокси макрос вместо OPENWEATHERMAP
+// Полный URL  развернутого Google Apps Script (замените ID макроса на свой)
+//const String GOOGLE_SCRIPT_URL = "google.com/...";
+const String GOOGLE_SCRIPT_URL = SECRET_GOOGLE_SCRIPT_URL;
+
+// *2. Источник ТЕКУЩИХ ПОКАЗАТЕЛЕЙ (блок current): "LOCAL_STATION", "GOOGLE_SCRIPT" или "OPEN_WEATHER"
+//const String CURRENT_PROVIDER = "OPEN_WEATHER";
+const String CURRENT_PROVIDER = SECRET_CURRENT_PROVIDER;
+// IP-адрес вашей метеостанции в локальной сети
+//const String LOCAL_METEO_URL   = "http://192.168.1"; 
+const String LOCAL_METEO_URL   = SECRET_LOCAL_METEO_URL; 
 
 // LOCATION
 // Set your latitude and longitude.

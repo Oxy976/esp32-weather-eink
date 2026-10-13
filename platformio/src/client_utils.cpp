@@ -40,13 +40,13 @@
 #include "display_utils.h"
 #include "renderer.h"
 #ifndef USE_HTTP
-  #include <WiFiClientSecure.h>
+#include <WiFiClientSecure.h>
 #endif
 
 #ifdef USE_HTTP
-  static const uint16_t OWM_PORT = 80;
+static const uint16_t OWM_PORT = 80;
 #else
-  static const uint16_t OWM_PORT = 443;
+static const uint16_t OWM_PORT = 443;
 #endif
 
 /* Power-on and connect WiFi.
@@ -121,13 +121,11 @@ bool waitForSNTPSync(tm *timeInfo)
 {
   // Wait for SNTP synchronization to complete
   unsigned long timeout = millis() + NTP_TIMEOUT;
-  if ((sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET)
-      && (millis() < timeout))
+  if ((sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) && (millis() < timeout))
   {
     Serial.print(TXT_WAITING_FOR_SNTP);
     delay(100); // ms
-    while ((sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET)
-        && (millis() < timeout))
+    while ((sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) && (millis() < timeout))
     {
       Serial.print(".");
       delay(100); // ms
@@ -144,17 +142,15 @@ bool waitForSNTPSync(tm *timeInfo)
  * Returns the HTTP Status Code.
  */
 #ifdef USE_HTTP
-  int getOWMonecall(WiFiClient &client, owm_resp_onecall_t &r)
+int getOWMonecall_OWM(WiFiClient &client, owm_resp_onecall_t &r)
 #else
-  int getOWMonecall(WiFiClientSecure &client, owm_resp_onecall_t &r)
+int getOWMonecall_OWM(WiFiClientSecure &client, owm_resp_onecall_t &r)
 #endif
 {
   int attempts = 0;
   bool rxSuccess = false;
   DeserializationError jsonErr = {};
-  String uri = "/data/" + OWM_ONECALL_VERSION
-               + "/onecall?lat=" + LAT + "&lon=" + LON + "&lang=" + OWM_LANG
-               + "&units=standard&exclude=minutely";
+  String uri = "/data/" + OWM_ONECALL_VERSION + "/onecall?lat=" + LAT + "&lon=" + LON + "&lang=" + OWM_LANG + "&units=standard&exclude=minutely";
 #if !DISPLAY_ALERTS
   // exclude alerts
   uri += ",alerts";
@@ -180,7 +176,7 @@ bool waitForSNTPSync(tm *timeInfo)
 
     HTTPClient http;
     http.setConnectTimeout(HTTP_CLIENT_TCP_TIMEOUT); // default 5000ms
-    http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT); // default 5000ms
+    http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT);        // default 5000ms
     http.begin(client, OWM_ENDPOINT, OWM_PORT, uri);
     httpResponse = http.GET();
     if (httpResponse == HTTP_CODE_OK)
@@ -195,13 +191,12 @@ bool waitForSNTPSync(tm *timeInfo)
     }
     client.stop();
     http.end();
-    Serial.println("  " + String(httpResponse, DEC) + " "
-                   + getHttpResponsePhrase(httpResponse));
+    Serial.println("  " + String(httpResponse, DEC) + " " + getHttpResponsePhrase(httpResponse));
     ++attempts;
   }
 
   return httpResponse;
-} // getOWMonecall
+} // getOWMonecall_OWM
 
 /* Perform an HTTP GET request to OpenWeatherMap's "Air Pollution" API
  * If data is received, it will be parsed and stored in the global variable
@@ -210,11 +205,20 @@ bool waitForSNTPSync(tm *timeInfo)
  * Returns the HTTP Status Code.
  */
 #ifdef USE_HTTP
-  int getOWMairpollution(WiFiClient &client, owm_resp_air_pollution_t &r)
+int getOWMairpollution(WiFiClient &client, owm_resp_air_pollution_t &r)
 #else
-  int getOWMairpollution(WiFiClientSecure &client, owm_resp_air_pollution_t &r)
+int getOWMairpollution(WiFiClientSecure &client, owm_resp_air_pollution_t &r)
 #endif
 {
+  // ---
+  // ВАЖНО: Если OWM не выбран ни для прогноза, ни для текущей погоды,
+  // мы мгновенно выходим из функции, возвращая статус OK (200), без отправки запроса в сеть.
+  if (WEATHER_PROVIDER != "OPEN_WEATHER" && CURRENT_PROVIDER != "OPEN_WEATHER")
+  {
+    return HTTP_CODE_OK;
+  }
+  // ----
+
   int attempts = 0;
   bool rxSuccess = false;
   DeserializationError jsonErr = {};
@@ -229,15 +233,11 @@ bool waitForSNTPSync(tm *timeInfo)
   char startStr[22];
   sprintf(endStr, "%lld", end);
   sprintf(startStr, "%lld", start);
-  String uri = "/data/2.5/air_pollution/history?lat=" + LAT + "&lon=" + LON
-               + "&start=" + startStr + "&end=" + endStr
-               + "&appid=" + OWM_APIKEY;
+  String uri = "/data/2.5/air_pollution/history?lat=" + LAT + "&lon=" + LON + "&start=" + startStr + "&end=" + endStr + "&appid=" + OWM_APIKEY;
   // This string is printed to terminal to help with debugging. The API key is
   // censored to reduce the risk of users exposing their key.
   String sanitizedUri = OWM_ENDPOINT +
-               "/data/2.5/air_pollution/history?lat=" + LAT + "&lon=" + LON
-               + "&start=" + startStr + "&end=" + endStr
-               + "&appid={API key}";
+                        "/data/2.5/air_pollution/history?lat=" + LAT + "&lon=" + LON + "&start=" + startStr + "&end=" + endStr + "&appid={API key}";
 
   Serial.print(TXT_ATTEMPTING_HTTP_REQ);
   Serial.println(": " + sanitizedUri);
@@ -253,7 +253,7 @@ bool waitForSNTPSync(tm *timeInfo)
 
     HTTPClient http;
     http.setConnectTimeout(HTTP_CLIENT_TCP_TIMEOUT); // default 5000ms
-    http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT); // default 5000ms
+    http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT);        // default 5000ms
     http.begin(client, OWM_ENDPOINT, OWM_PORT, uri);
     httpResponse = http.GET();
     if (httpResponse == HTTP_CODE_OK)
@@ -268,25 +268,186 @@ bool waitForSNTPSync(tm *timeInfo)
     }
     client.stop();
     http.end();
-    Serial.println("  " + String(httpResponse, DEC) + " "
-                   + getHttpResponsePhrase(httpResponse));
+    Serial.println("  " + String(httpResponse, DEC) + " " + getHttpResponsePhrase(httpResponse));
     ++attempts;
   }
 
   return httpResponse;
 } // getOWMairpollution
 
-/* Prints debug information about heap usage.
- */
-void printHeapUsage() {
-  Serial.println("[debug] Heap Size       : "
-                 + String(ESP.getHeapSize()) + " B");
-  Serial.println("[debug] Available Heap  : "
-                 + String(ESP.getFreeHeap()) + " B");
-  Serial.println("[debug] Min Free Heap   : "
-                 + String(ESP.getMinFreeHeap()) + " B");
-  Serial.println("[debug] Max Allocatable : "
-                 + String(ESP.getMaxAllocHeap()) + " B");
-  return;
+// -------------------------------------------------------------------------
+// ВНУТРЕННЯЯ ФУНКЦИЯ: Получение прогноза погоды через макрос Google Script
+// -------------------------------------------------------------------------
+#ifdef USE_HTTP
+static int getOWMonecall_Google(WiFiClient &client, owm_resp_onecall_t &r)
+#else
+static int getOWMonecall_Google(WiFiClientSecure &client, owm_resp_onecall_t &r)
+#endif
+{
+  int attempts = 0;
+  bool rxSuccess = false;
+  DeserializationError jsonErr = {};
+
+  String fullUrl = GOOGLE_SCRIPT_URL + "?lat=" + LAT + "&lon=" + LON;
+
+  Serial.print(TXT_ATTEMPTING_HTTP_REQ);
+  Serial.println(": " + fullUrl);
+  int httpResponse = 0;
+
+  while (!rxSuccess && attempts < 3)
+  {
+    wl_status_t connection_status = WiFi.status();
+    if (connection_status != WL_CONNECTED)
+    {
+      return -512 - static_cast<int>(connection_status);
+    }
+
+    HTTPClient http;
+    http.setConnectTimeout(HTTP_CLIENT_TCP_TIMEOUT);
+    http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT);
+
+    // Обязательно для Google Script макросов, так как они всегда перенаправляют запрос
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    http.begin(client, fullUrl);
+
+    httpResponse = http.GET();
+    if (httpResponse == HTTP_CODE_OK)
+    {
+      jsonErr = deserializeOneCall(http.getStream(), r);
+      if (jsonErr)
+      {
+        httpResponse = -256 - static_cast<int>(jsonErr.code());
+      }
+      rxSuccess = !jsonErr;
+    }
+    client.stop();
+    http.end();
+    Serial.println("  " + String(httpResponse, DEC) + " " + getHttpResponsePhrase(httpResponse));
+    ++attempts;
+  }
+
+  return httpResponse;
 }
 
+// -------------------------------------------------------------------------
+// ФУНКЦИЯ: Опрос локальной домашней метеостанции (HTTP в локальной сети)
+// -------------------------------------------------------------------------
+#ifdef USE_HTTP
+int getLocalMeteoData(WiFiClient &client, owm_resp_onecall_t &r)
+#else
+int getLocalMeteoData(WiFiClientSecure &client, owm_resp_onecall_t &r)
+#endif
+{
+  HTTPClient http;
+  http.setConnectTimeout(3000);
+  http.setTimeout(3000);
+
+  Serial.println("Attempting LOCAL METEO REQ: " + LOCAL_METEO_URL);
+
+#ifdef USE_HTTP
+  http.begin(client, LOCAL_METEO_URL);
+#else
+  WiFiClient localPlainClient;
+  http.begin(localPlainClient, LOCAL_METEO_URL);
+#endif
+
+  int httpResponse = http.GET();
+  if (httpResponse == HTTP_CODE_OK)
+  {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, http.getStream());
+
+    if (!error)
+    {
+      float tempVal = NAN;
+      int humVal = -1;
+      int pressVal = 0;
+
+      if (doc.is<JsonArray>())
+      {
+        JsonArray arr = doc.as<JsonArray>();
+
+        for (JsonObject sensor : arr)
+        {
+          // Если датчик неактивен, игнорируем его
+          if (!sensor["act"].as<bool>())
+            continue;
+
+          String unit = sensor["unit"].as<String>();
+          float val = sensor["val"].as<float>();
+
+          // ХОД НА БУДУЩЕЕ (Вариант №3): Когда добавите поле "type",
+          // просто раскомментируйте строки ниже, и они заменят поиск по юнитам.
+          /*
+          String type = sensor["type"].as<String>();
+          if (type == "temp") { tempVal = val; continue; }
+          if (type == "hum")  { humVal = (int)val; continue; }
+          if (type == "press"){ pressVal = (int)val; continue; }
+          */
+
+          // ВРЕМЕННОЕ РЕШЕНИЕ (Вариант №1): Ищем датчики по их физическим юнитам.
+          // Это защищает нас от изменения имен датчиков на сервере.
+          if (unit == "°C" || unit == "C")
+          {
+            tempVal = val;
+          }
+          else if (unit == "%" || unit == "%RH")
+          {
+            humVal = (int)val;
+          }
+          // Обрабатываем оба популярных формата давления (мм рт.ст. и гектопаскали)
+          else if (unit == "mmHg" || unit == "hPa" || unit == "мм.рт.ст.")
+          {
+            pressVal = (int)val;
+          }
+        }
+      }
+
+      // Записываем собранные данные в структуру дисплея
+      r.current.temp = tempVal;
+      r.current.humidity = humVal;
+      r.current.pressure = pressVal;
+      // r.current.weather.id = 800; // По умолчанию иконка "Ясно"
+
+      Serial.printf("[Local Meteo] Successfully processed -> T: %.2f, H: %d, P: %d\n", tempVal, humVal, pressVal);
+    }
+    else
+    {
+      Serial.println("Failed to parse local JSON array");
+      httpResponse = -256;
+    }
+  }
+
+  http.end();
+  return httpResponse;
+}
+
+// -------------------------------------------------------------------------
+// ГЛАВНАЯ ДИСПЕТЧЕРСКАЯ ФУНКЦИЯ (Имя и сигнатура сохранены для main.cpp)
+// -------------------------------------------------------------------------
+#ifdef USE_HTTP
+int getOWMonecall(WiFiClient &client, owm_resp_onecall_t &r)
+#else
+int getOWMonecall(WiFiClientSecure &client, owm_resp_onecall_t &r)
+#endif
+{
+  if (WEATHER_PROVIDER == "GOOGLE_SCRIPT")
+  {
+    return getOWMonecall_Google(client, r);
+  }
+  else
+  {
+    return getOWMonecall_OWM(client, r);
+  }
+}
+
+/* Prints debug information about heap usage.
+ */
+void printHeapUsage()
+{
+  Serial.println("[debug] Heap Size       : " + String(ESP.getHeapSize()) + " B");
+  Serial.println("[debug] Available Heap  : " + String(ESP.getFreeHeap()) + " B");
+  Serial.println("[debug] Min Free Heap   : " + String(ESP.getMinFreeHeap()) + " B");
+  Serial.println("[debug] Max Allocatable : " + String(ESP.getMaxAllocHeap()) + " B");
+  return;
+}

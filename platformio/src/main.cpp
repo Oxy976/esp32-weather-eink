@@ -29,33 +29,33 @@
 #include "config.h"
 #include "display_utils.h"
 #ifdef USE_OPENWEATHER_MOCK_DATA
-  #include "mock_weather.h"
+#include "mock_weather.h"
 #endif
 #ifdef DISP_3C_E420
-  #include "icons/icons_96x96.h"
+#include "icons/icons_96x96.h"
 #else
-  #include "icons/icons_196x196.h"
+#include "icons/icons_196x196.h"
 #endif
 #include "renderer.h"
 
 #if defined(SENSOR_BME280)
-  #include <Adafruit_BME280.h>
+#include <Adafruit_BME280.h>
 #endif
 #if defined(SENSOR_BME680)
-  #include <Adafruit_BME680.h>
+#include <Adafruit_BME680.h>
 #endif
 #if defined(SENSOR_AHT20)
-  #include <Adafruit_AHTX0.h>
+#include <Adafruit_AHTX0.h>
 #endif
 #if defined(USE_HTTPS_WITH_CERT_VERIF) || defined(USE_HTTPS_WITH_CERT_VERIF)
-  #include <WiFiClientSecure.h>
+#include <WiFiClientSecure.h>
 #endif
 #ifdef USE_HTTPS_WITH_CERT_VERIF
-  #include "cert.h"
+#include "cert.h"
 #endif
 
 // too large to allocate locally on stack
-static owm_resp_onecall_t       owm_onecall;
+static owm_resp_onecall_t owm_onecall;
 static owm_resp_air_pollution_t owm_air_pollution;
 
 Preferences prefs;
@@ -85,17 +85,14 @@ void beginDeepSleep(unsigned long startTime, tm *timeInfo)
   // time is relative to wake time
   int curHour = (timeInfo->tm_hour - WAKE_TIME + 24) % 24;
   const int curMinute = curHour * 60 + timeInfo->tm_min;
-  const int curSecond = curHour * 3600
-                      + timeInfo->tm_min * 60
-                      + timeInfo->tm_sec;
+  const int curSecond = curHour * 3600 + timeInfo->tm_min * 60 + timeInfo->tm_sec;
   const int desiredSleepSeconds = SLEEP_DURATION * 60;
   const int offsetMinutes = curMinute % SLEEP_DURATION;
   const int offsetSeconds = curSecond % desiredSleepSeconds;
 
   // align wake time to nearest multiple of SLEEP_DURATION
   int sleepMinutes = SLEEP_DURATION - offsetMinutes;
-  if (desiredSleepSeconds - offsetSeconds < 120
-   || offsetSeconds / (float)desiredSleepSeconds > 0.95f)
+  if (desiredSleepSeconds - offsetSeconds < 120 || offsetSeconds / (float)desiredSleepSeconds > 0.95f)
   { // if we have a sleep time less than 2 minutes OR less 5% SLEEP_DURATION,
     // skip to next alignment
     sleepMinutes += SLEEP_DURATION;
@@ -113,8 +110,7 @@ void beginDeepSleep(unsigned long startTime, tm *timeInfo)
   else
   {
     const int hoursUntilWake = 24 - curHour;
-    sleepDuration = hoursUntilWake * 3600ULL
-                    - (timeInfo->tm_min * 60ULL + timeInfo->tm_sec);
+    sleepDuration = hoursUntilWake * 3600ULL - (timeInfo->tm_min * 60ULL + timeInfo->tm_sec);
   }
 
   // add extra delay to compensate for esp32's with fast RTCs.
@@ -127,7 +123,7 @@ void beginDeepSleep(unsigned long startTime, tm *timeInfo)
 
   esp_sleep_enable_timer_wakeup(sleepDuration * 1000000ULL);
   Serial.print(TXT_AWAKE_FOR);
-  Serial.println(" "  + String((millis() - startTime) / 1000.0, 3) + "s");
+  Serial.println(" " + String((millis() - startTime) / 1000.0, 3) + "s");
   Serial.print(TXT_ENTERING_DEEP_SLEEP_FOR);
   Serial.println(" " + String(sleepDuration) + "s");
   esp_deep_sleep_start();
@@ -170,11 +166,11 @@ void setup()
       initDisplay();
       do
       {
-        #ifdef DISP_3C_E420
+#ifdef DISP_3C_E420
         drawError(battery_alert_0deg_96x96, TXT_LOW_BATTERY);
-        #else
+#else
         drawError(battery_alert_0deg_196x196, TXT_LOW_BATTERY);
-        #endif
+#endif
       } while (display.nextPage());
       powerOffDisplay();
     }
@@ -188,16 +184,14 @@ void setup()
     }
     else if (batteryVoltage <= VERY_LOW_BATTERY_VOLTAGE)
     { // very low battery
-      esp_sleep_enable_timer_wakeup(VERY_LOW_BATTERY_SLEEP_INTERVAL
-                                    * 60ULL * 1000000ULL);
+      esp_sleep_enable_timer_wakeup(VERY_LOW_BATTERY_SLEEP_INTERVAL * 60ULL * 1000000ULL);
       Serial.println(TXT_VERY_LOW_BATTERY_VOLTAGE);
       Serial.print(TXT_ENTERING_DEEP_SLEEP_FOR);
       Serial.println(" " + String(VERY_LOW_BATTERY_SLEEP_INTERVAL) + "min");
     }
     else
     { // low battery
-      esp_sleep_enable_timer_wakeup(LOW_BATTERY_SLEEP_INTERVAL
-                                    * 60ULL * 1000000ULL);
+      esp_sleep_enable_timer_wakeup(LOW_BATTERY_SLEEP_INTERVAL * 60ULL * 1000000ULL);
       Serial.println(TXT_LOW_BATTERY_VOLTAGE);
       Serial.print(TXT_ENTERING_DEEP_SLEEP_FOR);
       Serial.println(" " + String(LOW_BATTERY_SLEEP_INTERVAL) + "min");
@@ -232,11 +226,11 @@ void setup()
       Serial.println(TXT_NETWORK_NOT_AVAILABLE);
       do
       {
-        #ifdef DISP_3C_E420
+#ifdef DISP_3C_E420
         drawError(wifi_x_96x96, TXT_NETWORK_NOT_AVAILABLE);
-        #else
+#else
         drawError(wifi_x_196x196, TXT_NETWORK_NOT_AVAILABLE);
-        #endif
+#endif
       } while (display.nextPage());
     }
     else
@@ -244,11 +238,11 @@ void setup()
       Serial.println(TXT_WIFI_CONNECTION_FAILED);
       do
       {
-        #ifdef DISP_3C_E420
+#ifdef DISP_3C_E420
         drawError(wifi_x_96x96, TXT_WIFI_CONNECTION_FAILED);
-        #else
+#else
         drawError(wifi_x_196x196, TXT_WIFI_CONNECTION_FAILED);
-        #endif
+#endif
       } while (display.nextPage());
     }
     powerOffDisplay();
@@ -265,17 +259,18 @@ void setup()
     initDisplay();
     do
     {
-      #ifdef DISP_3C_E420
+#ifdef DISP_3C_E420
       drawError(wi_time_4_96x96, TXT_TIME_SYNCHRONIZATION_FAILED);
-      #else
+#else
       drawError(wi_time_4_196x196, TXT_TIME_SYNCHRONIZATION_FAILED);
-      #endif
+#endif
     } while (display.nextPage());
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
 
-  // MAKE API REQUESTS
+// *******************************************************************************
+// MAKE API REQUESTS
 #ifdef USE_OPENWEATHER_MOCK_DATA
   loadMockOpenWeatherData(owm_onecall, owm_air_pollution);
   statusStr = "Using OpenWeather data";
@@ -289,44 +284,84 @@ void setup()
   WiFiClientSecure client;
   client.setCACert(cert_Sectigo_Public_Server_Authentication_Root_R46);
 #endif
+
+  // ==========================================
+  // ЭТАП 1: ПОЛУЧЕНИЕ ПРОГНОЗА ПОГОДЫ
+  // ==========================================
+  // Переменная owm_onecall статическая, поэтому если getOWMonecall вернет ошибку,
+  // в ней останутся лежать данные с прошлого цикла (или mock-данные).
   int rxStatus = getOWMonecall(client, owm_onecall);
-  if (rxStatus != HTTP_CODE_OK)
+  bool forecastSuccess = (rxStatus == HTTP_CODE_OK);
+
+  if (!forecastSuccess)
   {
-    killWiFi();
-    statusStr = "One Call " + OWM_ONECALL_VERSION + " API";
-    tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
-    initDisplay();
-    do
-    {
-      #ifdef DISP_3C_E420
-      drawError(wi_cloud_down_96x96, statusStr, tmpStr);
-      #else
-      drawError(wi_cloud_down_196x196, statusStr, tmpStr);
-      #endif
-    } while (display.nextPage());
-    powerOffDisplay();
-    beginDeepSleep(startTime, &timeInfo);
+    // Прогноз не обновился. Не засыпаем, идем дальше.
+    // На экране останется старый прогноз, но статусная строка предупредит пользователя.
+    statusStr = (WEATHER_PROVIDER == "GOOGLE_SCRIPT") ? "Google API Error (Old Fcst)" : "OWM Error (Old Fcst)";
+    Serial.println("[Warning] Forecast sync failed. Keeping previous data.");
   }
-  rxStatus = getOWMairpollution(client, owm_air_pollution);
-  if (rxStatus != HTTP_CODE_OK)
+  else
   {
-    killWiFi();
-    statusStr = "Air Pollution API";
-    tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
-    initDisplay();
-    do
-    {
-      #ifdef DISP_3C_E420
-      drawError(wi_cloud_down_96x96, statusStr, tmpStr);
-      #else
-      drawError(wi_cloud_down_196x196, statusStr, tmpStr);
-      #endif
-    } while (display.nextPage());
-    powerOffDisplay();
-    beginDeepSleep(startTime, &timeInfo);
+    statusStr = (WEATHER_PROVIDER == "GOOGLE_SCRIPT") ? "Google Script API" : "OWM OneCall API";
   }
-  killWiFi(); // WiFi no longer needed
-#endif
+
+  // ==========================================
+  // ЭТАП 2: ПОЛУЧЕНИЕ АКТУАЛЬНЫХ (ТЕКУЩИХ) ПОКАЗАТЕЛЕЙ
+  // ==========================================
+  if (CURRENT_PROVIDER == "LOCAL_STATION")
+  {
+    int localStatus = getLocalMeteoData(client, owm_onecall);
+
+    if (localStatus != HTTP_CODE_OK)
+    {
+      // ИСПРАВЛЕНО: Заменили несуществующую 'r' на глобальную структуру 'owm_onecall'
+      owm_onecall.current.temp = NAN;
+      owm_onecall.current.humidity = -1;
+      owm_onecall.current.pressure = 0;
+
+      // Корректируем строку состояния
+      if (!forecastSuccess)
+      {
+        statusStr = "All Sync Failed";
+      }
+      else
+      {
+        statusStr = "Local Station Error";
+      }
+      Serial.println("[Warning] Local station failed. Current data cleared to placeholders.");
+    }
+    else
+    {
+      // Если локальная станция успешно ответила, но внешний интернет лежал
+      if (!forecastSuccess)
+      {
+        statusStr = "Local Ok / Forecast Error";
+      }
+    }
+  }
+
+  // ==========================================
+  // ЭТАП 3: ОБРАБОТКА AIR POLLUTION & СВЯЗЬ
+  // ==========================================
+  // Запрос качества воздуха (выполняется внутри, только если активен OWM)
+  getOWMairpollution(client, owm_air_pollution);
+
+  if (WEATHER_PROVIDER != "OPEN_WEATHER" && CURRENT_PROVIDER != "OPEN_WEATHER")
+  {
+    // Если OWM не используется, инициализируем структуру безопасными заглушками
+    memset(&owm_air_pollution, 0, sizeof(owm_air_pollution));
+    for (int i = 0; i < OWM_NUM_AIR_POLLUTION; ++i)
+    {
+      owm_air_pollution.main_aqi[i] = 1;
+    }
+  }
+
+  // В ЛЮБОМ СЛУЧАЕ выключаем WiFi модем, чтобы сберечь заряд аккумулятора
+  killWiFi();
+
+#endif // ИСПРАВЛЕНО: Закрывает блок !USE_OPENWEATHER_MOCK_DATA на правильном месте
+
+  // *******************************************************************************
 
   // GET INDOOR TEMPERATURE AND HUMIDITY
   pinMode(PIN_SENSOR_PWR, OUTPUT);
@@ -338,7 +373,7 @@ void setup()
 #endif
   TwoWire I2C_sensor = TwoWire(0);
   I2C_sensor.begin(PIN_SENSOR_SDA, PIN_SENSOR_SCL, 100000); // 100kHz
-  float inTemp     = NAN;
+  float inTemp = NAN;
   float inHumidity = NAN;
   bool sensorFound = false;
 #if defined(SENSOR_BME280)
@@ -347,8 +382,8 @@ void setup()
   sensorFound = bme.begin(BME_ADDRESS, &I2C_sensor);
   if (sensorFound)
   {
-    inTemp     = bme.readTemperature(); // Celsius
-    inHumidity = bme.readHumidity();    // %
+    inTemp = bme.readTemperature();  // Celsius
+    inHumidity = bme.readHumidity(); // %
   }
 #elif defined(SENSOR_BME680)
   const char *sensorName = "BME680";
@@ -356,8 +391,8 @@ void setup()
   sensorFound = bme.begin(BME_ADDRESS);
   if (sensorFound)
   {
-    inTemp     = bme.readTemperature(); // Celsius
-    inHumidity = bme.readHumidity();    // %
+    inTemp = bme.readTemperature();  // Celsius
+    inHumidity = bme.readHumidity(); // %
   }
 #elif defined(SENSOR_AHT20)
   const char *sensorName = "AHT20";
@@ -373,7 +408,7 @@ void setup()
     sensors_event_t temperatureEvent;
     if (aht.getEvent(&humidityEvent, &temperatureEvent))
     {
-      inTemp     = temperatureEvent.temperature;    // Celsius
+      inTemp = temperatureEvent.temperature;        // Celsius
       inHumidity = humidityEvent.relative_humidity; // %
     }
   }
@@ -432,4 +467,3 @@ void setup()
 void loop()
 {
 } // end loop
-

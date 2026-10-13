@@ -119,17 +119,12 @@ String utf8rus(String source)
   for (i = 0; i < source.length(); i++)
   {
     n = source[i];
-    if (n < 0x80)
+    // Пропускаем ВЕСЬ ДИАПАЗОН EN буковок и СПЕЦСИМВОЛОВ (от 128 до 191 включительно)
+    if (n <= 0xBF)
     {
       target += (char)n;
     }
-    // ОХВАТЫВАЕМ ВЕСЬ ДИАПАЗОН СПЕЦСИМВОЛОВ (от 128 до 191 включительно)
-    // Все кастомные глифы (градусы, радиация, м/с, ммР) пройдут на экран напрямую
-    else if (n >= 0x80 && n <= 0xBF) 
-    {
-      target += (char)n;
-    }
-    //русские буковки
+    // русские буковки, изменяем код
     else if (n >= 0xC0)
     {
       i++;
@@ -163,7 +158,6 @@ String utf8rus(String source)
   }
   return target;
 }
-
 
 /* Returns the string width in pixels
  */
