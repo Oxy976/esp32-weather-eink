@@ -81,7 +81,8 @@ const unsigned long WIFI_TIMEOUT = 10000; // ms, WiFi connection timeout.
 //   -1   Connection Refused
 //   -11  Read Timeout
 //   -258 Deserialization Incomplete Input
-const unsigned HTTP_CLIENT_TCP_TIMEOUT = 10000; // ms
+//const unsigned HTTP_CLIENT_TCP_TIMEOUT = 10000; // ms
+const unsigned HTTP_CLIENT_TCP_TIMEOUT = 15000; // ms
 
 // *1. Источник ПРОГНОЗА ПОГОДЫ (массивы hourly и daily): "GOOGLE_SCRIPT" или "OPEN_WEATHER"
 const String WEATHER_PROVIDER = "GOOGLE_SCRIPT"; 
