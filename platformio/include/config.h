@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <Arduino.h>
 
+
 // E-PAPER PANEL
 // This project supports the following E-Paper panels:
 //   DISP_BW_V2 - 7.5in e-Paper (v2)      800x480px  Black/White
@@ -161,14 +162,15 @@
 //   update the certificates in cert.h and reflash this software.
 //   Running cert.py will generate an updated cert.h file.
 // (uncomment exactly one)
-// #define USE_HTTP
- #define USE_HTTPS_NO_CERT_VERIF
+ //#define USE_HTTP
+ #define USE_HTTPS_NO_CERT_VERIF  //для практически всех интернет сайтов нужен https
 //#define USE_HTTPS_WITH_CERT_VERIF // REQUIRES MANUAL UPDATE WHEN CERT EXPIRES
 
 // Use local OpenWeatherMap sample data instead of making One Call and Air
 // Pollution API requests. Useful for display testing when no valid API key is
 // available.
-#define USE_OPENWEATHER_MOCK_DATA
+// ЗАГЛУШКА, с этим параметром обращаться за прогнозом никуда не будет!!!!
+//#define USE_OPENWEATHER_MOCK_DATA
 
 // WIND DIRECTION INDICATOR
 // Choose whether the wind direction indicator should be an arrow, number, or
@@ -378,6 +380,13 @@ extern const unsigned long LOW_BATTERY_SLEEP_INTERVAL;
 extern const unsigned long VERY_LOW_BATTERY_SLEEP_INTERVAL;
 extern const uint32_t MAX_BATTERY_VOLTAGE;
 extern const uint32_t MIN_BATTERY_VOLTAGE;
+
+//+++
+extern const String WEATHER_PROVIDER;
+extern const String CURRENT_PROVIDER;
+extern const String GOOGLE_SCRIPT_URL;
+extern const String LOCAL_METEO_URL;
+//+++
 
 // CONFIG VALIDATION - DO NOT MODIFY
 #if !(  defined(DISP_BW_V2)    \
