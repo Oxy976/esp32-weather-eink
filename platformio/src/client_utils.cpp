@@ -293,85 +293,174 @@ int getLocalMeteoData(WiFiClient &client, owm_resp_onecall_t &r)
 int getLocalMeteoData(WiFiClientSecure &client, owm_resp_onecall_t &r)
 #endif
 {
-  HTTPClient http;
-  http.setConnectTimeout(3000);
-  http.setTimeout(3000);
+  Serial.println("\n==================================================");
+  Serial.println(">>> [LOCAL STATION] CONNECTING VIA RAW TCP...");
+  Serial.println("    Full Config URL: " + LOCAL_METEO_URL);
+  
+  // 1. Извлекаем ХОСТ (IP-адрес) и ПУТЬ из константы LOCAL_METEO_URL
+  String host = LOCAL_METEO_URL;
+  host.replace("http://", ""); // убираем префикс
+  
+  int slashPos = host.indexOf('/');
+  String path = "/"; // путь по умолчанию, если слэша нет
+  
+  if (slashPos != -1) {
+    path = host.substring(slashPos); // забираем все, что после слэша (например, "/json")
+    host = host.substring(0, slashPos); // оставляем только чистый IP
+  }
 
-  Serial.println("Attempting LOCAL METEO REQ: " + LOCAL_METEO_URL);
+  // 2. Подключаемся к сокету роутера/станции
+  WiFiClient rawClient;
+  if (!rawClient.connect(host.c_str(), 80)) {
+    Serial.println("[LOCAL ERROR] RAW TCP Connection to " + host + " failed!");
+    Serial.println("==================================================\n");
+    return -512;
+  }
 
-  WiFiClient localPlainClient;
-  http.begin(localPlainClient, LOCAL_METEO_URL);
+  // 3. Отправляем HTTP-запрос с динамически выделенным путем из константы
+  Serial.println("    Sending request: GET " + path + " HTTP/1.1 to Host: " + host);
+  rawClient.print("GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n");
 
-  int httpResponse = http.GET();
-  if (httpResponse == HTTP_CODE_OK)
-  {
-    JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, http.getStream());
+  // Ждем ответа от сервера до 1000 мс
+  unsigned long timeout = millis() + 1000;
+  while (!rawClient.available() && millis() < timeout) {
+    delay(10);
+  }
 
-    if (!error && doc.is<JsonArray>())
-    {
-      float extTemp = NAN;
-      int extHum = -1;
-      int extPress = 0;
+  String localPayload = "";
+  bool isBody = false;
 
-      float temp_sht = NAN;
-      float temp_htu = NAN;
-      float temp_ds = NAN;
-
-      JsonArray arr = doc.as<JsonArray>();
-      for (JsonObject sensor : arr)
-      {
-        if (!sensor["act"].as<bool>())
-          continue;
-
-        String id_name = sensor["id_name"].as<String>();
-        float val = sensor["val"].as<float>();
-
-        if (id_name == "temp_ext_sht")
-          temp_sht = val;
-        else if (id_name == "temp_ext_htu")
-          temp_htu = val;
-        else if (id_name == "temp_ext_ds")
-          temp_ds = val;
-
-        else if (id_name == "hum_ext_sht")
-          extHum = (int)val;
-        else if (id_name == "hum_ext_htu" && extHum == -1)
-          extHum = (int)val;
-
-        else if (id_name == "press_int_bme")
-          extPress = (int)val;
+  // 4. Вычитываем весь поток данных из сокета
+  while (rawClient.available() || rawClient.connected()) {
+    if (rawClient.available()) {
+      String line = rawClient.readStringUntil('\n');
+      
+      // Ищем маркер окончания HTTP-заголовков (пустая строка)
+      if (!isBody && (line == "\r" || line.length() == 0)) {
+        isBody = true;
+        continue;
       }
-
-      if (!std::isnan(temp_sht))
-      {
-        extTemp = temp_sht;
+      
+      // Начинаем сборку тела, если дошли до него или если сервер выдал JSON сразу (с '[')
+      if (isBody || line.startsWith("[")) {
+        isBody = true; 
+        localPayload += line;
       }
-      else if (!std::isnan(temp_htu))
-      {
-        extTemp = temp_htu;
-      }
-      else if (!std::isnan(temp_ds))
-      {
-        extTemp = temp_ds;
-      }
-
-      r.current.temp = extTemp;
-      r.current.humidity = extHum;
-      r.current.pressure = extPress;
-      r.current.weather.id = 800;
-
-      Serial.printf("[Local API Success] Selected -> T: %.2f, H: %d, P: %d\n", extTemp, extHum, extPress);
-    }
-    else
-    {
-      Serial.println("Failed to parse dynamic local JSON array");
-      httpResponse = -256;
     }
   }
-  http.end();
-  return httpResponse;
+  rawClient.stop();
+  localPayload.trim(); // очищаем от мусорных переносов строк
+
+#if DEBUG_LEVEL >= 1
+  Serial.printf("    [DEBUG LOCAL RAW] Extracted Payload Size: %d bytes\n", localPayload.length());
+  Serial.println(localPayload);
+#endif
+
+  if (localPayload.length() == 0) {
+    Serial.println("[LOCAL ERROR] Received empty payload from server.");
+    Serial.println("==================================================\n");
+    return -256;
+  }
+
+  // 5. Парсинг полученного JSON-массива в ArduinoJson v7
+  JsonDocument doc; 
+  DeserializationError error = deserializeJson(doc, localPayload);
+
+  if (error) {
+    Serial.printf("[LOCAL ERROR] JSON Deserialization failed: %s\n", error.c_str());
+    Serial.println("==================================================\n");
+    return -256;
+  }
+
+  JsonArray arr = doc.as<JsonArray>();
+  if (!arr.isNull())
+  {
+    float extTemp = NAN;
+    int extHum = -1;
+    int extPress = 0;
+
+    float temp_sht = NAN;
+    float temp_htu = NAN;
+    float temp_ds = NAN;
+
+    Serial.println(">>> [LOCAL STATION] PARSING SENSORS ARRAY:");
+    
+    for (JsonObject sensor : arr)
+    {
+      String id_name = sensor["id_name"].as<String>();
+      bool active = sensor["act"].as<bool>();
+      float val = sensor["val"].as<float>();
+
+      Serial.printf("    Sensor: %-15s | Active: %s | Value: %.2f\n", 
+                    id_name.c_str(), 
+                    active ? "TRUE " : "FALSE", 
+                    val);
+
+      if (!active) continue;
+
+      // Сбор температур
+      if (id_name == "temp_ext_sht")
+        temp_sht = val;
+      else if (id_name == "temp_ext_htu")
+        temp_htu = val;
+      else if (id_name == "temp_ext_ds")
+        temp_ds = val;
+
+      // Сбор влажности
+      else if (id_name == "hum_ext_sht")
+        extHum = (int)val;
+      else if (id_name == "hum_ext_htu" && extHum == -1)
+        extHum = (int)val; 
+
+      // Сбор давления (перевод из mmHg в hPa не требуется, если рендерер это умеет, 
+      // но OWM хранит в hPa. Наша станция шлет 764.54 mmHg. Оставляем как есть или пересчитаем при необходимости)
+      else if (id_name == "press_int_bme")
+        extPress = (int)(val * 1.33322f); // Перевод из mmHg в hPa
+    }
+
+    // Резервирование температур
+    Serial.println(">>> [LOCAL STATION] RESOLVING RECOVERY LOGIC:");
+    if (!std::isnan(temp_sht)) {
+      extTemp = temp_sht;
+      Serial.println("    -> Selected: temp_ext_sht (Priority 1)");
+    }
+    else if (!std::isnan(temp_htu)) {
+      extTemp = temp_htu;
+      Serial.println("    -> Selected: temp_ext_htu (Priority 2) [SHT offline]");
+    }
+    else if (!std::isnan(temp_ds)) {
+      extTemp = temp_ds;
+      Serial.println("    -> Selected: temp_ext_ds  (Priority 3) [SHT & HTU offline]");
+    }
+
+    // Запись в структуру в Кельвинах (+ 273.15f)
+    if (!std::isnan(extTemp)) {
+      r.current.temp = extTemp + 273.15f; 
+    } else {
+      r.current.temp = NAN;
+    }
+
+    r.current.humidity = extHum;
+    r.current.pressure = extPress;
+    r.current.weather.id = 800; // Ясно
+
+    Serial.println(">>> [LOCAL STATION] FINAL VALUES STORED IN STRUCT:");
+    Serial.printf("    Temp: %.2f C (Stored as %.2f K) | Hum: %d%% | Press: %d hPa\n", 
+                  extTemp, r.current.temp, r.current.humidity, r.current.pressure);
+    
+    Serial.println("==================================================\n");
+    return 200;
+  }
+  else
+  {
+    Serial.println("[LOCAL ERROR] JSON root is not a valid Array.");
+    Serial.println("==================================================\n");
+    return -257;
+  }
 }
+
+
+
 // -------------------------------------------------------------------------
 // ГЛАВНАЯ ДИСПЕТЧЕРСКАЯ ФУНКЦИЯ (Имя и сигнатура сохранены для main.cpp)
 // -------------------------------------------------------------------------

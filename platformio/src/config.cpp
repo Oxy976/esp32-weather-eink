@@ -132,7 +132,7 @@ const String LOCAL_METEO_URL   = SECRET_LOCAL_METEO_URL;
 const String LAT = "59.9391";
 const String LON = "30.3159";
 // City name that will be shown in the top-right corner of the display.
-const String CITY_STRING = "SPb";
+const String CITY_STRING = "Санкт-Петербург";
 
 
 
@@ -164,8 +164,10 @@ const char *DATE_FORMAT = "%e %B, %a";
 const char *REFRESH_TIME_FORMAT = "%x %H:%M";
 // NTP_SERVER_1 is the primary time server, while NTP_SERVER_2 is a fallback.
 // pool.ntp.org will find the closest available NTP server to you.
-const char *NTP_SERVER_1 = "ru.pool.ntp.org";
-const char *NTP_SERVER_2 = "192.168.1.1";
+//const char *NTP_SERVER_1 = "ru.pool.ntp.org";
+//const char *NTP_SERVER_2 = "192.168.1.1";
+const char *NTP_SERVER_1 = LOCAL_NTP_SERVER_1;
+const char *NTP_SERVER_2 = "ru.pool.ntp.org";
 // If you encounter the 'Failed To Fetch The Time' error, try increasing
 // NTP_TIMEOUT or select closer/lower latency time servers.
 const unsigned long NTP_TIMEOUT = 20000; // ms
